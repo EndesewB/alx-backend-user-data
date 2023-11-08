@@ -3,7 +3,6 @@
 Module for authentication using Basic auth
 """
 
-
 from typing import TypeVar
 from api.v1.auth.auth import Auth
 import base64
@@ -57,29 +56,26 @@ class BasicAuth(Auth):
         except Exception:
             return None
 
-    
-    def extract_user_credentials(self, decoded_base64_authorization_header: str) -> (str, str):
-        """Extracts user credentials from a decoded Base64 authorization header.
-    
+    def extract_user_credentials(
+            self, decoded_base64_authorization_header: str) -> (str, str):
+        """Extracts user credentials from a decoded Base64.
+
         Args:
-            decoded_base64_authorization_header (str): The decoded Base64 authorization header.
-    
+            decoded_base64_authorization_header (str): The decoded
+
         Returns:
-            Tuple[str, str]: A tuple containing the email and password extracted from the header.
+            Tuple[str, str]:
         """
         if decoded_base64_authorization_header is None:
             return (None, None)
         if not isinstance(decoded_base64_authorization_header, str):
             return (None, None)
-    
-        # Splitting on the first occurrence of ':' instead of all occurrences
+
         email, *rest = decoded_base64_authorization_header.split(':', 1)
-    
-        # If there's more than one element in rest, join them with ':'
+
         password = ':'.join(rest) if rest else None
-    
+
         return (email, password)
-        
 
     def user_object_from_credentials(
             self, user_email: str, user_pwd: str) -> TypeVar('User'):
