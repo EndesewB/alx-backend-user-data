@@ -2,33 +2,36 @@
 """
 Module for SessionDBAuth class
 """
-from api.v1.auth.session_auth import SessionAuth
-from datetime import datetime, timedelta
-from os import getenv
+from datetime import timedelta
+import datetime
+from api.v1.auth.session_exp_auth import SessionExpAuth
+from models.user_session import UserSession
 from uuid import uuid4
 
 
-class SessionExpAuth(SessionAuth):
-    """SessionExpAuth class inherits from SessionAuth
+class SessionDBAuth(SessionExpAuth):
+    """SessionDBAuth class inherits from SessionExpAuth
     """
-    def __init__(self):
-        super().__init__()
-        self.session_duration = int(getenv("SESSION_DURATION", 0))
+    user_id_by_session_id = {}
 
     def create_session(self, user_id=None):
-        """Create a new UserSession with session expiration and return the session ID
+        """Create a new UserSession and return the session ID
         """
-        session_id = super().create_session(user_id)
-
-        if session_id is None:
+        if user_id is None or not isinstance(user_id, str):
             return None
 
-        self.user_id_by_session_id[session_id]['created_at'] = datetime.now()
+        session_id = str(uuid4())
+        new_user_session = UserSession(user_id=user_id, session_id=session_id)
+        self.user_id_by_session_id[session_id] = {
+            'user_id': user_id,
+            'created_at': new_user_session.created_at
+        }
 
+        new_user_session.save()
         return session_id
 
     def user_id_for_session_id(self, session_id=None):
-        """Return the User ID based on session ID with session expiration
+        """Return the User ID based on session ID from the database
         """
         if session_id is None or not isinstance(session_id, str):
             return None
@@ -48,3 +51,21 @@ class SessionExpAuth(SessionAuth):
             return None
 
         return session_dict['user_id']
+
+    def destroy_session(self, request=None):
+        """Destroy the UserSession based on the Session ID from the request cookie
+        """
+        if request is None:
+            return False
+
+        session_cookie = self.session_cookie(request)
+        if session_cookie is None:
+            return False
+
+        user_session = UserSession.get(session_cookie)
+        if not user_session:
+            return False
+
+        user_session.delete()
+        del self.user_id_by_session_id[session_cookie]
+        return True
