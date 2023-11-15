@@ -13,7 +13,7 @@ class User(Base):
 
     Args:
         Base (_type_): describes the type
-    """
+        """
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)
